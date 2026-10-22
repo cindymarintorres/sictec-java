@@ -1,0 +1,48 @@
+# Node
+node_modules/
+dist/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment
+.env
+.env.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Docker
+.docker/
+
+# NestJS
+logs/
+*.log
+
+# Prisma
+/api/prisma/migrations/
+/api/prisma/*.db
+
+# OS
+.DS_Store
+Thumbs.db
+
+# H2 Database
+data/
+*.mv.db
+*.trace.db
+api/data/
+
+#Agentes IA
+.codex/
+.agents/
+.claude/
+.gemini/
+.antigravity/
+AGENTS.md
+CLAUDE.md
+GEMINI.md
+ANTIGRAVITY.md
