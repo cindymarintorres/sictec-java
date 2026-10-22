@@ -41,22 +41,12 @@ sictec-java/
 │   ├── src/main/java/com/sictec/spring/api/
 │   │   ├── SictecApplication.java                # Clase principal (@SpringBootApplication)
 │   │   ├── controller/                           # Controladores REST (@RestController)
-│   │   │   ├── HealthController.java
-│   │   │   └── LoteController.java
 │   │   ├── service/                              # Lógica de negocio (@Service)
-│   │   │   ├── SriConsultaService.java
-│   │   │   └── ClasificadorService.java
 │   │   ├── async/                                # Tareas en segundo plano
-│   │   │   └── LoteAsyncProcessor.java
 │   │   ├── excel/                                # Lector y escritor Apache POI
-│   │   │   ├── FacturasReader.java
-│   │   │   └── FacturasWriter.java
 │   │   ├── model/                                # Entidades JPA (@Entity)
-│   │   │   └── Lote.java
 │   │   ├── repository/                           # Interfaces JPA (@Repository)
-│   │   │   └── LoteRepository.java
 │   │   └── config/                               # Clases de configuración (@Configuration)
-│   │       └── AsyncConfig.java
 │   └── src/main/resources/
 │       ├── application.properties                # Configuración de H2, puerto y logging
 │       ├── data/                                 # Catálogos de actividades y categorías (JSON/YAML)
