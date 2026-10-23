@@ -19,11 +19,8 @@ export default defineConfig(({ mode }) => {
       proxy: {
         "/api": {
           // Usamos la variable cargada o el fallback
-          target: env.VITE_PROXY_TARGET || "http://sictec_api:8000",
+          target: env.VITE_PROXY_TARGET || "http://localhost:8080",
           changeOrigin: true,
-          // REVISA ESTO: Laravel suele tener el prefijo /api en sus rutas.
-          // Si tu backend ya espera /api/algo, NO uses el rewrite.
-          // rewrite: (path) => path.replace(/^\/api/, ''),
           configure: (proxy) => { 
             //Manejar el API_KEY desde el proxy de Vite para no exponer la misma
             //ya que corre en Node, del lado del servidor de desarrollo, nunca se descarga al cliente). Así la key nunca toca el bundle
