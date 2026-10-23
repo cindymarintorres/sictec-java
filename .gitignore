@@ -31,10 +31,10 @@ logs/
 Thumbs.db
 
 # H2 Database
-data/
+/data/
 *.mv.db
 *.trace.db
-api/data/
+/api/data/
 
 #Agentes IA
 .codex/

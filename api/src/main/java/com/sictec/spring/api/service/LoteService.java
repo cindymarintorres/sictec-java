@@ -4,6 +4,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -34,17 +35,20 @@ public class LoteService {
     private final FacturasExcelReader excelReader;
     private final SriConsultaService sriService;
     private final FacturasExcelWriter excelWriter;
+    private final ClasificadorService clasificadorService;
 
     public LoteService(LoteRepository loteRepository,
             LoteResultadoRepository loteResultadoRepository,
             FacturasExcelReader excelReader,
             FacturasExcelWriter excelWriter,
-            SriConsultaService sriService) {
+            SriConsultaService sriService,
+            ClasificadorService clasificadorService) {
         this.loteRepository = loteRepository;
         this.loteResultadoRepository = loteResultadoRepository;
         this.excelReader = excelReader;
         this.excelWriter = excelWriter;
         this.sriService = sriService;
+        this.clasificadorService = clasificadorService;
         try {
             Files.createDirectories(storageDir);
         } catch (Exception e) {
@@ -108,7 +112,8 @@ public class LoteService {
                 if (valido) {
                     SriContribuyenteDto datos = sriService.consultar(ruc);
                     actividad = (datos != null) ? datos.actividadEconomicaPrincipal() : null;
-                    categoria = (actividad != null) ? "Por clasificar" : "Sin actividad";
+                    // categoria = (actividad != null) ? "Por clasificar" : "Sin actividad";
+                    categoria = clasificadorService.clasificar(actividad);
                 }
                 // Guardar resultado del RUC en H2
                 LoteResultado res = new LoteResultado(batchId, ruc, actividad, categoria);
@@ -164,11 +169,11 @@ public class LoteService {
 
         // Obtener todos los resultados clasificados del lote
         List<LoteResultado> resultados = loteResultadoRepository.findByLoteId(batchId);
-        Map<String, LoteResultado> mapaResultados = resultados.stream()
-                .collect(java.util.stream.Collectors.toMap(
-                        LoteResultado::getRuc,
-                        record -> record,
-                        (record1, record2) -> record1));
+        Map<String, LoteResultado> mapaResultados = new HashMap<>();
+
+        for (LoteResultado res : resultados) {
+            mapaResultados.putIfAbsent(res.getRuc(), res);
+        }
 
         byte[] contenido = excelWriter.generarExcelClasificado(lote.getRutaArchivoAlmacenado(), mapaResultados);
 

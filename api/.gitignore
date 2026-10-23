@@ -37,6 +37,6 @@ out/
 .vscode/
 
 ### H2 Database ###
-data/
+/data/
 *.mv.db
 *.trace.db
