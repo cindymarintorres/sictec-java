@@ -5,6 +5,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import org.slf4j.Logger;
@@ -17,6 +18,7 @@ import com.sictec.spring.api.dto.EstadoLoteResponseDto;
 import com.sictec.spring.api.dto.SriContribuyenteDto;
 import com.sictec.spring.api.dto.SubirLoteResponseDto;
 import com.sictec.spring.api.excel.FacturasExcelReader;
+import com.sictec.spring.api.excel.FacturasExcelWriter;
 import com.sictec.spring.api.model.Lote;
 import com.sictec.spring.api.model.LoteResultado;
 import com.sictec.spring.api.repository.LoteRepository;
@@ -31,14 +33,17 @@ public class LoteService {
     private final LoteResultadoRepository loteResultadoRepository;
     private final FacturasExcelReader excelReader;
     private final SriConsultaService sriService;
+    private final FacturasExcelWriter excelWriter;
 
     public LoteService(LoteRepository loteRepository,
             LoteResultadoRepository loteResultadoRepository,
             FacturasExcelReader excelReader,
+            FacturasExcelWriter excelWriter,
             SriConsultaService sriService) {
         this.loteRepository = loteRepository;
         this.loteResultadoRepository = loteResultadoRepository;
         this.excelReader = excelReader;
+        this.excelWriter = excelWriter;
         this.sriService = sriService;
         try {
             Files.createDirectories(storageDir);
@@ -144,5 +149,33 @@ public class LoteService {
         }
         lote.setCancelled(true);
         loteRepository.save(lote);
+    }
+
+    public record ArchivoDescarga(String nombreArchivo, byte[] contenido) {
+    }
+
+    public ArchivoDescarga descargarLote(String batchId) throws Exception {
+        Lote lote = loteRepository.findById(batchId)
+                .orElseThrow(() -> new IllegalArgumentException("Lote no encontrado"));
+
+        if (!lote.isFinished() && !lote.isCancelled()) {
+            throw new IllegalStateException("El lote aún no ha terminado de procesarse");
+        }
+
+        // Obtener todos los resultados clasificados del lote
+        List<LoteResultado> resultados = loteResultadoRepository.findByLoteId(batchId);
+        Map<String, LoteResultado> mapaResultados = resultados.stream()
+                .collect(java.util.stream.Collectors.toMap(
+                        LoteResultado::getRuc,
+                        record -> record,
+                        (record1, record2) -> record1));
+
+        byte[] contenido = excelWriter.generarExcelClasificado(lote.getRutaArchivoAlmacenado(), mapaResultados);
+
+        String nombreBase = lote.getNombreArchivoOriginal().replaceFirst("[.][^.]+$", "");
+        String extension = lote.getNombreArchivoOriginal().endsWith(".xls") ? ".xls" : ".xlsx";
+        String nombreDescarga = nombreBase + "_clasificado" + extension;
+
+        return new ArchivoDescarga(nombreDescarga, contenido);
     }
 }

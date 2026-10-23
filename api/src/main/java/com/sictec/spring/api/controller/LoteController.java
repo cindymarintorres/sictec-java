@@ -64,4 +64,25 @@ public class LoteController {
             return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("message", e.getMessage()));
         }
     }
+
+    @GetMapping("/{batchId}/descargar")
+    public ResponseEntity<?> descargarLote(@PathVariable String batchId) {
+        try {
+            var archivoDescarga = loteService.descargarLote(batchId);
+
+            return ResponseEntity.ok()
+                    .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION,
+                            "attachment; filename=\"" + archivoDescarga.nombreArchivo() + "\"")
+                    .header(org.springframework.http.HttpHeaders.CONTENT_TYPE,
+                            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+                    .body(archivoDescarga.contenido());
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("message", e.getMessage()));
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("message", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("message", "Error al generar el archivo: " + e.getMessage()));
+        }
+    }
 }
