@@ -107,15 +107,20 @@ cp -r dist/* ../api/src/main/resources/static/
 cd ../api
 ./gradlew bootJar
 
-# 4. (Opcional) Empaquetar como instalador / ejecutable nativo (.exe / .app)
-jpackage --input build/libs/ \
-  --name SICTEC \
-  --main-jar api-0.0.1-SNAPSHOT.jar \
-  --type exe \
-  --java-options "-Xmx512m"
+# 4. Ejecutar el JAR resultante
+java -jar build/libs/api-0.0.1-SNAPSHOT.jar
 ```
 
-El usuario final simplemente ejecuta el archivo resultante y abre `http://localhost:8080` (o se puede abrir automáticamente con un comando del sistema).
+El usuario final simplemente ejecuta el archivo y abre `http://localhost:8080`.
+
+### 🪟 Generación del instalador Windows (`sictec-java.exe`) con GitHub Actions
+
+Para generar el instalador nativo de Windows sin necesidad de compilar en una máquina Windows física:
+
+1. El repositorio incluye el workflow [`.github/workflows/build-windows.yml`](.github/workflows/build-windows.yml).
+2. En GitHub, ve a la pestaña **Actions** $\rightarrow$ selecciona **Build Windows Executable (.exe)** $\rightarrow$ **Run workflow**.
+3. El pipeline compila React, Spring Boot y ejecuta `jpackage` en una máquina virtual Windows oficial.
+4. Al finalizar, descarga el artefacto **`sictec-java-windows-installer`**, que contiene el ejecutable `sictec-java.exe` con Java embebido (cero dependencias para el cliente final).
 
 ---
 

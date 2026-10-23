@@ -40,3 +40,7 @@ out/
 /data/
 *.mv.db
 *.trace.db
+
+### Static built assets ###
+src/main/resources/static/*
+!src/main/resources/static/.gitkeep
