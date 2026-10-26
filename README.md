@@ -42,7 +42,6 @@ sictec-java/
 │   │   ├── SictecApplication.java                # Clase principal (@SpringBootApplication)
 │   │   ├── controller/                           # Controladores REST (@RestController)
 │   │   ├── service/                              # Lógica de negocio (@Service)
-│   │   ├── async/                                # Tareas en segundo plano
 │   │   ├── excel/                                # Lector y escritor Apache POI
 │   │   ├── model/                                # Entidades JPA (@Entity)
 │   │   ├── repository/                           # Interfaces JPA (@Repository)

@@ -34,6 +34,9 @@ dependencies {
 	// Apache POI para manipulación de Excel (.xlsx y .xls)
 	implementation 'org.apache.poi:poi:5.4.1'
 	implementation 'org.apache.poi:poi-ooxml:5.4.1'
+
+	// Swagger / OpenAPI — UI interactiva en /swagger-ui.html
+	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.9'
 }
 
 tasks.named('test') {

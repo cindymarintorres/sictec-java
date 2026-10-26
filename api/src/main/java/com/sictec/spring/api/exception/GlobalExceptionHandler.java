@@ -36,7 +36,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, String>> handleIllegalArgument(IllegalArgumentException ex) {
         log.warn("Solicitud no válida: {}", ex.getMessage());
         return ResponseEntity
-                .status(HttpStatus.UNPROCESSABLE_ENTITY)
+                .status(HttpStatus.UNPROCESSABLE_CONTENT)
                 .body(Map.of("message", ex.getMessage()));
     }
 

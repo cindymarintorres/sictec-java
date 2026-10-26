@@ -27,6 +27,15 @@ public class SpaWebConfig implements WebMvcConfigurer {
                         if (requestedResource.exists() && requestedResource.isReadable()) {
                             return requestedResource;
                         }
+
+                        // No interceptar rutas de API, Swagger o consola H2
+                        if (resourcePath.startsWith("api") 
+                                || resourcePath.startsWith("swagger-ui") 
+                                || resourcePath.startsWith("v3/api-docs") 
+                                || resourcePath.startsWith("h2-console")) {
+                            return null;
+                        }
+
                         // Si es una ruta de frontend (ej. /lotes/uuid), entrega index.html
                         return new ClassPathResource("/static/index.html");
                     }
