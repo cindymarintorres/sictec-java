@@ -5,10 +5,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.Executor;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.scheduling.annotation.Async;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -34,6 +35,7 @@ public class LoteService {
     private final FacturasExcelWriter excelWriter;
     private final ClasificadorService clasificadorService;
     private final FileStorageService fileStorageService;
+    private final Executor taskExecutor;
 
     public LoteService(LoteRepository loteRepository,
             LoteResultadoRepository loteResultadoRepository,
@@ -41,7 +43,8 @@ public class LoteService {
             FacturasExcelWriter excelWriter,
             SriConsultaService sriService,
             ClasificadorService clasificadorService,
-            FileStorageService fileStorageService) {
+            FileStorageService fileStorageService,
+            @Qualifier("taskExecutor") Executor taskExecutor) {
         this.loteRepository = loteRepository;
         this.loteResultadoRepository = loteResultadoRepository;
         this.excelReader = excelReader;
@@ -49,38 +52,25 @@ public class LoteService {
         this.sriService = sriService;
         this.clasificadorService = clasificadorService;
         this.fileStorageService = fileStorageService;
+        this.taskExecutor = taskExecutor;
     }
 
     /**
      * Punto de entrada unificado: lee el Excel UNA sola vez, guarda el archivo
-     * en disco y dispara el procesamiento asíncrono en un único método.
-     * El controlador solo necesita llamar a este método.
+     * en disco y dispara el procesamiento asíncrono en un Virtual Thread sin bloquear la respuesta HTTP.
      */
     public SubirLoteResponseDto iniciarLote(MultipartFile archivo) throws Exception {
-        SubirLoteResponseDto respuesta = crearLote(archivo);
-        // Los RUCs únicos ya están en la BD; los releemos del lote para el async
-        Lote lote = loteRepository.findById(respuesta.batchId()).orElseThrow();
-        var resultadoLectura = excelReader.extraerRucs(
-                java.nio.file.Files.newInputStream(java.nio.file.Paths.get(lote.getRutaArchivoAlmacenado())));
-        procesarLoteAsync(respuesta.batchId(), resultadoLectura.rucsUnicos());
-        return respuesta;
-    }
-
-    /**
-     * 1. Lee los RUCs del archivo Excel
-     * 2. Guarda el archivo original en disco mediante FileStorageService
-     * 3. Registra el Lote en la BD H2
-     */
-    public SubirLoteResponseDto crearLote(MultipartFile archivo) throws Exception {
         var resultadoLectura = excelReader.extraerRucs(archivo.getInputStream());
         List<String> rucsTotales = resultadoLectura.rucsTotales();
         List<String> rucsUnicos = resultadoLectura.rucsUnicos();
         if (rucsUnicos.isEmpty()) {
             throw new IllegalArgumentException("No se encontraron RUC válidos en la columna RUC_EMISOR");
         }
+
         String batchId = UUID.randomUUID().toString();
-        // Delegar el guardado en disco a FileStorageService
+        // Guardar archivo original en disco
         Path destino = fileStorageService.guardar(archivo, batchId);
+
         // Crear la entidad Lote en H2
         Lote lote = new Lote();
         lote.setId(batchId);
@@ -93,6 +83,10 @@ public class LoteService {
         lote.setFinished(false);
         lote.setCancelled(false);
         loteRepository.save(lote);
+
+        // Disparar procesamiento asíncrono garantizado mediante el Executor (Virtual Threads)
+        taskExecutor.execute(() -> procesarLote(batchId, rucsUnicos));
+
         return new SubirLoteResponseDto(
                 batchId,
                 rucsTotales.size(),
@@ -101,10 +95,9 @@ public class LoteService {
     }
 
     /**
-     * Procesa los RUCs del lote en segundo plano (@Async)
+     * Procesa los RUCs del lote en segundo plano.
      */
-    @Async("taskExecutor")
-    public void procesarLoteAsync(String batchId, List<String> rucsUnicos) {
+    public void procesarLote(String batchId, List<String> rucsUnicos) {
         log.info("Iniciando procesamiento asíncrono para el lote: {}", batchId);
         for (String ruc : rucsUnicos) {
             // Verificar si el usuario canceló el lote
