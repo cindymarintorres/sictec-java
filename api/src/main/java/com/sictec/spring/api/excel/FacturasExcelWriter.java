@@ -20,30 +20,15 @@ public class FacturasExcelWriter {
     private static final String COLOR_FILA_IMPAR  = "FFFFFF";
     private static final String COLOR_TEXTO_DATOS  = "000000";
 
-    private final DataFormatter formatter = new DataFormatter();
-
-    /**
-     * Convierte un color HEX (sin #, ej: "5B9BD5") a XSSFColor.
-     * Apache POI internamente usa bytes RGB.
-     */
-    private XSSFColor hexColor(String hex) {
-        byte[] rgb = new byte[]{
-            (byte) Integer.parseInt(hex.substring(0, 2), 16),
-            (byte) Integer.parseInt(hex.substring(2, 4), 16),
-            (byte) Integer.parseInt(hex.substring(4, 6), 16)
-        };
-        return new XSSFColor(rgb, new DefaultIndexedColorMap());
-    }
-
     private XSSFCellStyle crearEstilo(XSSFWorkbook wb, String hexFondo, String hexTexto, boolean bold) {
         XSSFCellStyle style = wb.createCellStyle();
-        style.setFillForegroundColor(hexColor(hexFondo));
+        style.setFillForegroundColor(ExcelUtils.hexColor(hexFondo));
         style.setFillPattern(FillPatternType.SOLID_FOREGROUND);
         XSSFFont font = wb.createFont();
         font.setFontName("Calibri");
         font.setFontHeightInPoints((short) 11);
         font.setBold(bold);
-        font.setColor(hexColor(hexTexto));
+        font.setColor(ExcelUtils.hexColor(hexTexto));
         style.setFont(font);
         return style;
     }
@@ -61,15 +46,9 @@ public class FacturasExcelWriter {
                 throw new IllegalStateException("El archivo original no tiene fila de cabecera");
             }
 
-            // 1. Identificar columna RUC_EMISOR (sin tocar nada)
-            int indiceRuc = -1;
+            // 1. Identificar columna RUC_EMISOR — delegado a ExcelUtils
             int totalColumnas = headerRow.getLastCellNum();
-            for (Cell cell : headerRow) {
-                if ("RUC_EMISOR".equalsIgnoreCase(formatter.formatCellValue(cell).trim())) {
-                    indiceRuc = cell.getColumnIndex();
-                    break;
-                }
-            }
+            int indiceRuc = ExcelUtils.buscarIndiceColumna(headerRow, ExcelUtils.COL_RUC_EMISOR);
 
             int colActividad = totalColumnas;
             int colCategoria = totalColumnas + 1;
@@ -87,11 +66,11 @@ public class FacturasExcelWriter {
 
             // 3. Cabeceras nuevas
             Cell cActividad = headerRow.createCell(colActividad);
-            cActividad.setCellValue("ACTIVIDAD_ECONOMICA");
+            cActividad.setCellValue(ExcelUtils.COL_ACTIVIDAD_ECONOMICA);
             if (estiloHeader != null) cActividad.setCellStyle(estiloHeader);
 
             Cell cCategoria = headerRow.createCell(colCategoria);
-            cCategoria.setCellValue("CATEGORIA");
+            cCategoria.setCellValue(ExcelUtils.COL_CATEGORIA);
             if (estiloHeader != null) cCategoria.setCellStyle(estiloHeader);
 
             // 4. Rellenar datos (lógica original intacta) + estilo alterno por fila
@@ -103,23 +82,23 @@ public class FacturasExcelWriter {
                 String ruc = "";
                 if (indiceRuc != -1) {
                     Cell c = row.getCell(indiceRuc);
-                    if (c != null) ruc = formatter.formatCellValue(c).trim();
+                    if (c != null) ruc = ExcelUtils.FORMATTER.formatCellValue(c).trim();
                 }
 
-                // Aplicar color alterno a celdas existentes
+                // Leer resultado del RUC (común a ambas ramas)
+                LoteResultado res = resultadosPorRuc.get(ruc);
+                String actividad = (res != null && res.getActividadEconomica() != null)
+                        ? res.getActividadEconomica() : "No encontrado";
+                String categoria = (res != null && res.getCategoria() != null)
+                        ? res.getCategoria() : "No encontrado";
+
+                // Aplicar estilo alterno solo si es .xlsx
                 if (estiloFilaPar != null) {
                     XSSFCellStyle estiloFila = ((r + 1) % 2 == 0) ? estiloFilaPar : estiloFilaImpar;
                     for (int c = 0; c < totalColumnas; c++) {
                         Cell cell = row.getCell(c);
                         if (cell != null) cell.setCellStyle(estiloFila);
                     }
-
-                    LoteResultado res = resultadosPorRuc.get(ruc);
-                    String actividad = (res != null && res.getActividadEconomica() != null)
-                            ? res.getActividadEconomica() : "No encontrado";
-                    String categoria = (res != null && res.getCategoria() != null)
-                            ? res.getCategoria() : "No encontrado";
-
                     Cell cAct = row.createCell(colActividad);
                     cAct.setCellValue(actividad);
                     cAct.setCellStyle(estiloFila);
@@ -128,12 +107,7 @@ public class FacturasExcelWriter {
                     cCat.setCellValue(categoria);
                     cCat.setCellStyle(estiloFila);
                 } else {
-                    // Sin estilos (archivo .xls antiguo): misma lógica original
-                    LoteResultado res = resultadosPorRuc.get(ruc);
-                    String actividad = (res != null && res.getActividadEconomica() != null)
-                            ? res.getActividadEconomica() : "No encontrado";
-                    String categoria = (res != null && res.getCategoria() != null)
-                            ? res.getCategoria() : "No encontrado";
+                    // Sin estilos: escribir datos directamente (.xls antiguo)
                     row.createCell(colActividad).setCellValue(actividad);
                     row.createCell(colCategoria).setCellValue(categoria);
                 }
