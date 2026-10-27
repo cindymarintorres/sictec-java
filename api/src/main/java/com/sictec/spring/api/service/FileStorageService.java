@@ -15,6 +15,9 @@ import org.springframework.web.multipart.MultipartFile;
  * Servicio responsable exclusivamente del almacenamiento y recuperación
  * de archivos en el sistema de ficheros local.
  *
+ * <p>Usa el directorio del usuario ({@code ${user.home}/.sictec-java/uploads}) para garantizar
+ * permisos de escritura tanto en Windows (sin admin) como en Linux y macOS.</p>
+ *
  * <p>Si en el futuro el almacenamiento migra a S3 u otro proveedor,
  * solo se modifica esta clase sin tocar la lógica de negocio.</p>
  */
@@ -22,7 +25,8 @@ import org.springframework.web.multipart.MultipartFile;
 public class FileStorageService {
 
     private static final Logger log = LoggerFactory.getLogger(FileStorageService.class);
-    private static final Path STORAGE_DIR = Paths.get("data/uploads");
+    // Ruta en el directorio del usuario — siempre escribible sin permisos de admin
+    private static final Path STORAGE_DIR = Paths.get(System.getProperty("user.home"), ".sictec-java", "uploads");
 
     public FileStorageService() {
         try {
