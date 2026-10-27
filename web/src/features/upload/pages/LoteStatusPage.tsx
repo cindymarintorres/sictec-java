@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useParams, useNavigate, useLocation } from "react-router";
-import { CheckCircle2, XCircle } from "lucide-react";
+import { AlertTriangle, CheckCircle2, XCircle } from "lucide-react";
 import {
   Empty,
   EmptyContent,
@@ -168,17 +168,55 @@ export const LoteStatusPage = () => {
     );
   }
 
+  const todosFallaron = estado.failed_jobs > 0 && estado.processed_jobs === 0;
+  const algunosFallaron = estado.failed_jobs > 0 && estado.processed_jobs > 0;
+
   return (
     <Empty className="w-full">
       <EmptyHeader className="max-w-md!">
-        <CheckCircle2 className="text-green-600 size-15" />
+        {todosFallaron ? (
+          <AlertTriangle className="text-amber-500 size-15" />
+        ) : (
+          <CheckCircle2 className="text-green-600 size-15" />
+        )}
         <EmptyTitle className="text-2xl font-medium">
-          ¡Procesamiento completo!
+          {todosFallaron
+            ? "Procesamiento finalizado con incidencias"
+            : "¡Procesamiento completo!"}
         </EmptyTitle>
         <EmptyDescription className="text-md">
-          El archivo se procesó correctamente y las columnas{" "}
-          <strong>ACTIVIDAD_ECONOMICA y CATEGORIA</strong> fueron agregadas.
+          {todosFallaron
+            ? "El archivo fue procesado, pero ningún RUC pudo ser consultado debido a la indisponibilidad del servicio del SRI."
+            : "El archivo se procesó correctamente y las columnas ACTIVIDAD_ECONOMICA y CATEGORIA fueron agregadas."}
         </EmptyDescription>
+
+        {algunosFallaron && (
+          <div className="mt-3 p-3 text-left rounded-md bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-400 text-sm flex items-start gap-2">
+            <AlertTriangle className="size-5 shrink-0 text-amber-600 dark:text-amber-400 mt-0.5" />
+            <div>
+              <strong>Aviso de indisponibilidad del SRI:</strong>
+              <p className="mt-1">
+                {estado.failed_jobs} de {estado.total_jobs} RUCs no pudieron ser
+                consultados por caídas o lentitud del SRI. Los registros afectados
+                mostrarán <em>'Error de comunicación SRI'</em> en el archivo.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {todosFallaron && (
+          <div className="mt-3 p-3 text-left rounded-md bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-400 text-sm flex items-start gap-2">
+            <AlertTriangle className="size-5 shrink-0 text-amber-600 dark:text-amber-400 mt-0.5" />
+            <div>
+              <strong>Servicio del SRI no disponible:</strong>
+              <p className="mt-1">
+                El portal del SRI se encuentra caído o inaccesible. El archivo
+                descargable contendrá la estructura con las columnas añadidas, pero
+                podría estar vacío de datos o con errores de comunicación. Se recomienda reintentar más tarde.
+              </p>
+            </div>
+          </div>
+        )}
       </EmptyHeader>
       <EmptyContent className="flex flex-1 flex-row justify-center gap-2 items-center mt-5">
         <a
@@ -186,10 +224,12 @@ export const LoteStatusPage = () => {
           download
           className={cn(
             buttonVariants({ variant: "default", size: "lg" }),
-            "bg-green-800 hover:bg-green-700",
+            todosFallaron
+              ? "bg-amber-700 hover:bg-amber-600"
+              : "bg-green-800 hover:bg-green-700",
           )}
         >
-          Descargar resultado
+          {todosFallaron ? "Descargar archivo con errores" : "Descargar resultado"}
         </a>
 
         <Button
