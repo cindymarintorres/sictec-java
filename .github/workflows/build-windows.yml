@@ -68,6 +68,7 @@ jobs:
             --main-jar api-0.0.1-SNAPSHOT.jar \
             --main-class org.springframework.boot.loader.launch.JarLauncher \
             --runtime-image jre-win \
+            --icon api/src/main/resources/icon-sictec.ico \
             --type exe \
             --win-dir-chooser \
             --win-menu \
