@@ -42,3 +42,8 @@ dependencies {
 tasks.named('test') {
 	useJUnitPlatform()
 }
+
+// Deshabilita el plain JAR para que solo se genere el fat JAR ejecutable
+tasks.named('jar') {
+	enabled = false
+}
