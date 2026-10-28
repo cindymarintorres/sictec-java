@@ -17,12 +17,38 @@ public final class ExcelUtils {
     public static final String COL_RUC_EMISOR        = "RUC_EMISOR";
     public static final String COL_ACTIVIDAD_ECONOMICA = "ACTIVIDAD_ECONOMICA";
     public static final String COL_CATEGORIA          = "CATEGORIA";
+    public static final String COL_FECHA_AUTORIZACION = "FECHA_AUTORIZACION";
+    public static final String COL_FECHA_EMISION      = "FECHA_EMISION";
 
     // ── Formateador compartido (hilo-seguro en lectura) ─────────────────────
     public static final DataFormatter FORMATTER = new DataFormatter();
 
     /** Clase utilitaria: no debe instanciarse. */
     private ExcelUtils() {}
+
+    /**
+     * Extrae el RUC de una celda garantizando los 13 dígitos con el cero a la izquierda,
+     * incluso si la celda es numérica o está en notación científica.
+     */
+    public static String extraerRuc(Cell cell) {
+        if (cell == null) return "";
+        if (cell.getCellType() == org.apache.poi.ss.usermodel.CellType.NUMERIC) {
+            long num = Math.round(cell.getNumericCellValue());
+            return String.format("%013d", num);
+        }
+        String texto = FORMATTER.formatCellValue(cell).trim();
+        if (texto.contains("E+") || texto.contains("e+")) {
+            try {
+                double d = Double.parseDouble(texto.replace(",", "."));
+                return String.format("%013d", Math.round(d));
+            } catch (Exception ignored) {
+            }
+        }
+        if (texto.length() == 12 && texto.chars().allMatch(Character::isDigit)) {
+            return "0" + texto;
+        }
+        return texto;
+    }
 
     /**
      * Busca el índice de la primera columna cuyo encabezado coincida

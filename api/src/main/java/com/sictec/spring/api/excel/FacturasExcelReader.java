@@ -45,7 +45,7 @@ public class FacturasExcelReader {
                 Cell cell = row.getCell(indiceRuc);
                 if (cell == null) continue;
 
-                String ruc = ExcelUtils.FORMATTER.formatCellValue(cell).trim();
+                String ruc = ExcelUtils.extraerRuc(cell).trim();
                 if (!ruc.isEmpty()) {
                     rucsTotales.add(ruc);
                 }
