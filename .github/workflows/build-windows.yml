@@ -3,6 +3,8 @@ name: Build Windows Executable (.exe)
 on:
   workflow_dispatch:
   push:
+    branches:
+      - main
     tags:
       - 'v*'
 
@@ -59,12 +61,25 @@ jobs:
             --add-modules java.se,jdk.unsupported \
             --output jre-win
 
+      - name: Determinar versión de la aplicación
+        shell: bash
+        run: |
+          if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+            VER="${GITHUB_REF_NAME#v}"
+          else
+            VER="1.0.${{ github.run_number }}"
+          fi
+          echo "APP_VERSION=$VER" >> $GITHUB_ENV
+          echo "Versión calculada para el instalador: $VER"
+
       - name: Empaquetar a Instalador Windows (sictec-java.exe) con jpackage
         shell: bash
         run: |
           jpackage \
             --input api/build/libs \
             --name "sictec-java" \
+            --app-version "${APP_VERSION}" \
+            --win-upgrade-uuid "d3b07384-d113-4f93-b6c8-10076a9a7b78" \
             --main-jar api-0.0.1-SNAPSHOT.jar \
             --main-class org.springframework.boot.loader.launch.JarLauncher \
             --runtime-image jre-win \
